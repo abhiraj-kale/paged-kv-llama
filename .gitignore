@@ -1,0 +1,17 @@
+# model checkpoints / data — too large for git
+*.bin
+!tokenizer.bin
+
+# build artifacts
+run
+runq
+run.exe
+runq.exe
+*.o
+cmake-build-*/
+CMakeFiles/
+CMakeCache.txt
+
+# IDE
+.idea/
+.vscode/
