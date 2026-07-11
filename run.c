@@ -805,6 +805,8 @@ void generate_batch(Transformer* transformer, Tokenizer* tokenizer, Sampler* sam
 
     Sequence* seqs = malloc(num_seqs * sizeof(Sequence));
     int num_active = num_seqs;
+    long total_tokens = 0;
+    long start = time_in_ms();
 
     for (int i = 0; i < num_seqs; i++) {
         malloc_run_state_shared(&seqs[i].state, p, shared_pool);
@@ -831,6 +833,7 @@ void generate_batch(Transformer* transformer, Tokenizer* tokenizer, Sampler* sam
                 next = sample(sampler, logits);
             }
             seqs[i].pos++;
+            total_tokens++;
 
             int finished = (next == 1) || (seqs[i].pos >= seqs[i].steps);
 
@@ -855,11 +858,17 @@ void generate_batch(Transformer* transformer, Tokenizer* tokenizer, Sampler* sam
         }
     }
 
+    long end = time_in_ms();
+    double elapsed_s = (end - start) / 1000.0;
+    double tok_per_s = elapsed_s > 0 ? total_tokens / elapsed_s : 0;
+
     int naive_pages = num_seqs * ((p->seq_len + PAGE_SIZE - 1) / PAGE_SIZE);
     int peak_used = pagepool_peak_pages_used(shared_pool);   // real measured high-water mark, not just configured capacity
     printf("\n=== Batch generation complete: %d sequences ===\n", num_seqs);
-    printf("Pool capacity: %d pages | Peak actually used: %d pages | Naive (one pool per sequence, sized for max context): %d pages\n\n",
+    printf("Pool capacity: %d pages | Peak actually used: %d pages | Naive (one pool per sequence, sized for max context): %d pages\n",
            pool_pages, peak_used, naive_pages);
+    printf("BENCH num_seqs=%d steps_per_seq=%d total_tokens=%ld elapsed_s=%.3f tok_per_s=%.3f peak_pages=%d naive_pages=%d\n\n",
+           num_seqs, steps_per_seq, total_tokens, elapsed_s, tok_per_s, peak_used, naive_pages);
     for (int i = 0; i < num_seqs; i++) {
         printf("[Seq %d] \"%s\"%s\n\n", i, seqs[i].prompt, seqs[i].output);
         free(seqs[i].prompt_tokens);
@@ -1042,6 +1051,7 @@ void error_usage() {
     fprintf(stderr, "  -z <string> optional path to custom tokenizer\n");
     fprintf(stderr, "  -m <string> mode: generate|chat|batch, default: generate\n");
     fprintf(stderr, "  -y <string> (optional) system prompt in chat mode\n");
+    fprintf(stderr, "  -q <int>    batch mode: number of concurrent sequences, default 4\n");
     exit(EXIT_FAILURE);
 }
 
@@ -1057,6 +1067,7 @@ int main(int argc, char *argv[]) {
     unsigned long long rng_seed = 0; // seed rng with time by default
     char *mode = "generate";    // generate|chat
     char *system_prompt = NULL; // the (optional) system prompt to use in chat mode
+    int num_seqs = 4;           // batch mode: number of concurrent sequences
 
     // poor man's C argparse so we can override the defaults above from the command line
     if (argc >= 2) { checkpoint_path = argv[1]; } else { error_usage(); }
@@ -1074,6 +1085,7 @@ int main(int argc, char *argv[]) {
         else if (argv[i][1] == 'z') { tokenizer_path = argv[i + 1]; }
         else if (argv[i][1] == 'm') { mode = argv[i + 1]; }
         else if (argv[i][1] == 'y') { system_prompt = argv[i + 1]; }
+        else if (argv[i][1] == 'q') { num_seqs = atoi(argv[i + 1]); }
         else { error_usage(); }
     }
 
@@ -1102,19 +1114,29 @@ int main(int argc, char *argv[]) {
     } else if (strcmp(mode, "chat") == 0) {
         chat(&transformer, &tokenizer, &sampler, prompt, system_prompt, steps);
     } else if (strcmp(mode, "batch") == 0) {
-        // demo: 4 differently-worded prompts, generated CONCURRENTLY,
-        // sharing one KV-cache pool much smaller than the naive "one pool
-        // per sequence, sized for the model's max context" approach would need.
-        char* demo_prompts[] = {
+        // num_seqs concurrent sequences, sharing one KV-cache pool much
+        // smaller than the naive "one pool per sequence, sized for the
+        // model's max context" approach would need. -q sets num_seqs,
+        // -n sets each sequence's step budget (reused from generate mode).
+        char* prompt_pool[] = {
             "One day, a robot",
             "The little girl looked up at the sky and",
             "Once there was a dragon who",
-            "In the middle of the forest, a fox"
+            "In the middle of the forest, a fox",
+            "The old man walked slowly and",
+            "A young scientist discovered that",
+            "Every morning, the baker would",
+            "Deep in the cave, they found"
         };
-        int num_seqs = 4;
-        int steps_per_seq = 50;
+        int pool_size = sizeof(prompt_pool) / sizeof(prompt_pool[0]);
+        char** demo_prompts = malloc(num_seqs * sizeof(char*));
+        for (int i = 0; i < num_seqs; i++) {
+            demo_prompts[i] = prompt_pool[i % pool_size]; // cycle if num_seqs > pool_size
+        }
+        int steps_per_seq = steps;
         int pool_pages = num_seqs * ((steps_per_seq + PAGE_SIZE - 1) / PAGE_SIZE);
         generate_batch(&transformer, &tokenizer, &sampler, demo_prompts, num_seqs, steps_per_seq, pool_pages);
+        free(demo_prompts);
     } else {
         fprintf(stderr, "unknown mode: %s\n", mode);
         error_usage();
