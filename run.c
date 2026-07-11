@@ -110,6 +110,44 @@ void free_run_state(RunState* s) {
     pagepool_destroy(s->page_pool);
 }
 
+// Like malloc_run_state, but draws its PageTable from an EXTERNALLY OWNED pool
+// instead of creating a private one — this is what lets multiple sequences
+// share a single memory budget instead of each reserving its own worst case.
+void malloc_run_state_shared(RunState* s, Config* p, PagePoolHandle* pool) {
+    int kv_dim = (p->dim * p->n_kv_heads) / p->n_heads;
+    s->x = calloc(p->dim, sizeof(float));
+    s->xb = calloc(p->dim, sizeof(float));
+    s->xb2 = calloc(p->dim, sizeof(float));
+    s->hb = calloc(p->hidden_dim, sizeof(float));
+    s->hb2 = calloc(p->hidden_dim, sizeof(float));
+    s->q = calloc(p->dim, sizeof(float));
+    s->page_pool = NULL; // not owned by this RunState — do not destroy it here
+    s->kv_pages = pagetable_create(pool, kv_dim);
+    s->att = calloc(p->n_heads * p->seq_len, sizeof(float));
+    s->logits = calloc(p->vocab_size, sizeof(float));
+    if (!s->x || !s->xb || !s->xb2 || !s->hb || !s->hb2 || !s->q
+     || !s->kv_pages || !s->att || !s->logits) {
+        fprintf(stderr, "malloc failed!\n");
+        exit(EXIT_FAILURE);
+    }
+}
+
+// Counterpart to malloc_run_state_shared: releases this sequence's pages back
+// to the shared pool (so another sequence can reuse them), but does NOT
+// destroy the pool itself, since it doesn't own it.
+void free_run_state_shared(RunState* s) {
+    free(s->x);
+    free(s->xb);
+    free(s->xb2);
+    free(s->hb);
+    free(s->hb2);
+    free(s->q);
+    free(s->att);
+    free(s->logits);
+    pagetable_release(s->kv_pages);
+    pagetable_destroy(s->kv_pages);
+}
+
 void memory_map_weights(TransformerWeights *w, Config* p, float* ptr, int shared_weights) {
     int head_size = p->dim / p->n_heads;
     // make sure the multiplications below are done in 64bit to fit the parameter counts of 13B+ models
@@ -230,12 +268,11 @@ void matmul(float* xout, float* x, float* w, int n, int d) {
     }
 }
 
-float* forward(Transformer* transformer, int token, int pos) {
+float* forward(Transformer* transformer, RunState* s, int token, int pos) {
 
     // a few convenience variables
     Config* p = &transformer->config;
     TransformerWeights* w = &transformer->weights;
-    RunState* s = &transformer->state;
     float *x = s->x;
     int dim = p->dim;
     int kv_dim = (p->dim * p->n_kv_heads) / p->n_heads;
@@ -725,6 +762,95 @@ long time_in_ms() {
 // ----------------------------------------------------------------------------
 // generation loop
 
+// one concurrently-running conversation, in a multi-sequence batch
+typedef struct {
+    RunState state;         // this sequence's own scratch buffers + page table
+    int* prompt_tokens;
+    int num_prompt_tokens;
+    int pos;                 // how many tokens generated so far
+    int token;                // the token to feed in next
+    int steps;                 // this sequence's step budget
+    int active;                 // 0 once finished (EOS or hit its step budget)
+    char* prompt;
+    char output[4096];           // accumulated generated text, for printing at the end
+    int output_len;
+} Sequence;
+
+// Runs num_seqs conversations CONCURRENTLY, round-robin, one token per sequence
+// per tick, all drawing KV-cache pages from one SHARED pool sized by pool_pages
+// (not num_seqs * the model's max context — that's the whole point of paging).
+// Each sequence releases its pages back to the pool the moment it finishes,
+// so the next sequence at that slot can immediately reuse them.
+void generate_batch(Transformer* transformer, Tokenizer* tokenizer, Sampler* sampler,
+                     char** prompts, int num_seqs, int steps_per_seq, int pool_pages) {
+    Config* p = &transformer->config;
+    int kv_dim = (p->dim * p->n_kv_heads) / p->n_heads;
+    PagePoolHandle* shared_pool = pagepool_create(pool_pages, p->n_layers, kv_dim);
+
+    Sequence* seqs = malloc(num_seqs * sizeof(Sequence));
+    int num_active = num_seqs;
+
+    for (int i = 0; i < num_seqs; i++) {
+        malloc_run_state_shared(&seqs[i].state, p, shared_pool);
+        seqs[i].prompt = prompts[i];
+        seqs[i].prompt_tokens = malloc((strlen(prompts[i]) + 3) * sizeof(int));
+        encode(tokenizer, prompts[i], 1, 0, seqs[i].prompt_tokens, &seqs[i].num_prompt_tokens);
+        seqs[i].pos = 0;
+        seqs[i].token = seqs[i].prompt_tokens[0];
+        seqs[i].steps = steps_per_seq;
+        seqs[i].active = 1;
+        seqs[i].output_len = 0;
+        seqs[i].output[0] = '\0';
+    }
+
+    while (num_active > 0) {
+        for (int i = 0; i < num_seqs; i++) {
+            if (!seqs[i].active) continue;
+
+            float* logits = forward(transformer, &seqs[i].state, seqs[i].token, seqs[i].pos);
+            int next;
+            if (seqs[i].pos < seqs[i].num_prompt_tokens - 1) {
+                next = seqs[i].prompt_tokens[seqs[i].pos + 1];
+            } else {
+                next = sample(sampler, logits);
+            }
+            seqs[i].pos++;
+
+            int finished = (next == 1) || (seqs[i].pos >= seqs[i].steps);
+
+            if (next != 1) {
+                char* piece = decode(tokenizer, seqs[i].token, next);
+                if (piece != NULL) {
+                    int plen = (int)strlen(piece);
+                    if (seqs[i].output_len + plen < (int)sizeof(seqs[i].output) - 1) {
+                        memcpy(seqs[i].output + seqs[i].output_len, piece, plen);
+                        seqs[i].output_len += plen;
+                        seqs[i].output[seqs[i].output_len] = '\0';
+                    }
+                }
+            }
+            seqs[i].token = next;
+
+            if (finished) {
+                seqs[i].active = 0;
+                num_active--;
+                free_run_state_shared(&seqs[i].state); // return this sequence's pages to the shared pool
+            }
+        }
+    }
+
+    int naive_pages = num_seqs * ((p->seq_len + PAGE_SIZE - 1) / PAGE_SIZE);
+    printf("\n=== Batch generation complete: %d sequences ===\n", num_seqs);
+    printf("Shared pool: %d pages used | Naive (one pool per sequence, sized for max context): %d pages\n\n",
+           pool_pages, naive_pages);
+    for (int i = 0; i < num_seqs; i++) {
+        printf("[Seq %d] \"%s\"%s\n\n", i, seqs[i].prompt, seqs[i].output);
+        free(seqs[i].prompt_tokens);
+    }
+    free(seqs);
+    pagepool_destroy(shared_pool);
+}
+
 void generate(Transformer *transformer, Tokenizer *tokenizer, Sampler *sampler, char *prompt, int steps) {
     char *empty_prompt = "";
     if (prompt == NULL) { prompt = empty_prompt; }
@@ -746,7 +872,7 @@ void generate(Transformer *transformer, Tokenizer *tokenizer, Sampler *sampler, 
     while (pos < steps) {
 
         // forward the transformer to get logits for the next token
-        float* logits = forward(transformer, token, pos);
+        float* logits = forward(transformer, &transformer->state, token, pos);
 
         // advance the state machine
         if (pos < num_prompt_tokens - 1) {
@@ -866,7 +992,7 @@ void chat(Transformer *transformer, Tokenizer *tokenizer, Sampler *sampler,
         if (token == 2) { user_turn = 1; }
 
         // forward the transformer to get logits for the next token
-        float* logits = forward(transformer, token, pos);
+        float* logits = forward(transformer, &transformer->state, token, pos);
         next = sample(sampler, logits);
         pos++;
 
@@ -897,7 +1023,7 @@ void error_usage() {
     fprintf(stderr, "  -n <int>    number of steps to run for, default 256. 0 = max_seq_len\n");
     fprintf(stderr, "  -i <string> input prompt\n");
     fprintf(stderr, "  -z <string> optional path to custom tokenizer\n");
-    fprintf(stderr, "  -m <string> mode: generate|chat, default: generate\n");
+    fprintf(stderr, "  -m <string> mode: generate|chat|batch, default: generate\n");
     fprintf(stderr, "  -y <string> (optional) system prompt in chat mode\n");
     exit(EXIT_FAILURE);
 }
@@ -958,6 +1084,20 @@ int main(int argc, char *argv[]) {
         generate(&transformer, &tokenizer, &sampler, prompt, steps);
     } else if (strcmp(mode, "chat") == 0) {
         chat(&transformer, &tokenizer, &sampler, prompt, system_prompt, steps);
+    } else if (strcmp(mode, "batch") == 0) {
+        // demo: 4 differently-worded prompts, generated CONCURRENTLY,
+        // sharing one KV-cache pool much smaller than the naive "one pool
+        // per sequence, sized for the model's max context" approach would need.
+        char* demo_prompts[] = {
+            "One day, a robot",
+            "The little girl looked up at the sky and",
+            "Once there was a dragon who",
+            "In the middle of the forest, a fox"
+        };
+        int num_seqs = 4;
+        int steps_per_seq = 50;
+        int pool_pages = num_seqs * ((steps_per_seq + PAGE_SIZE - 1) / PAGE_SIZE);
+        generate_batch(&transformer, &tokenizer, &sampler, demo_prompts, num_seqs, steps_per_seq, pool_pages);
     } else {
         fprintf(stderr, "unknown mode: %s\n", mode);
         error_usage();
