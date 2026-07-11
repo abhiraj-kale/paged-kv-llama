@@ -45,9 +45,10 @@ Investigated rather than taken at face value:
   vocab, worse on WSL's `/mnt/c` filesystem). Sequential pays this 4x,
   concurrent pays it once → accounts for ~16s of the ~20s gap.
 - Tested the hypothesis that sequential's larger per-invocation pool
-  allocation (64 pages, vs. the shared pool's 8) adds meaningful calloc/
-  page-fault cost. Measured directly: **57ms** difference — negligible,
-  hypothesis rejected.
+  allocation (4x a 64-page pool, vs. the shared pool's 8 pages) adds
+  meaningful calloc/page-fault cost. Measured directly with the real
+  model dims (n_layers=12, kv_dim=768): **221ms** difference — still
+  negligible against an ~8s residual, hypothesis rejected.
 - Remaining ~8s gap: no validated mechanism found. Both paths do identical
   total FLOPs (same `forward()` calls, same `pos` values, just different
   order), each configuration was sampled only once, and there is no compute
