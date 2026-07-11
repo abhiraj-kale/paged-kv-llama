@@ -15,6 +15,7 @@
 #endif
 // ----------------------------------------------------------------------------
 // Transformer model
+#include "paged_cache_c_api.h"
 
 typedef struct {
     int dim; // transformer dimension
@@ -60,8 +61,8 @@ typedef struct {
     float *att; // buffer for scores/attention values (n_heads, seq_len)
     float *logits; // output logits
     // kv cache
-    float* key_cache;   // (layer, seq_len, dim)
-    float* value_cache; // (layer, seq_len, dim)
+    PagePoolHandle* page_pool;
+    PageTableHandle* kv_pages;
 } RunState;
 
 typedef struct {
@@ -83,13 +84,14 @@ void malloc_run_state(RunState* s, Config* p) {
     s->hb = calloc(p->hidden_dim, sizeof(float));
     s->hb2 = calloc(p->hidden_dim, sizeof(float));
     s->q = calloc(p->dim, sizeof(float));
-    s->key_cache = calloc(p->n_layers * p->seq_len * kv_dim, sizeof(float));
-    s->value_cache = calloc(p->n_layers * p->seq_len * kv_dim, sizeof(float));
+    int num_pages = (p->seq_len + PAGE_SIZE - 1) / PAGE_SIZE;
+    s->page_pool = pagepool_create(num_pages, p->n_layers, kv_dim);
+    s->kv_pages = pagetable_create(s->page_pool, kv_dim);
     s->att = calloc(p->n_heads * p->seq_len, sizeof(float));
     s->logits = calloc(p->vocab_size, sizeof(float));
     // ensure all mallocs went fine
     if (!s->x || !s->xb || !s->xb2 || !s->hb || !s->hb2 || !s->q
-     || !s->key_cache || !s->value_cache || !s->att || !s->logits) {
+     || !s->page_pool || !s->kv_pages || !s->att || !s->logits) {
         fprintf(stderr, "malloc failed!\n");
         exit(EXIT_FAILURE);
     }
@@ -104,8 +106,8 @@ void free_run_state(RunState* s) {
     free(s->q);
     free(s->att);
     free(s->logits);
-    free(s->key_cache);
-    free(s->value_cache);
+    pagetable_destroy(s->kv_pages);
+    pagepool_destroy(s->page_pool);
 }
 
 void memory_map_weights(TransformerWeights *w, Config* p, float* ptr, int shared_weights) {
@@ -252,9 +254,8 @@ float* forward(Transformer* transformer, int token, int pos) {
         rmsnorm(s->xb, x, w->rms_att_weight + l*dim, dim);
 
         // key and value point to the kv cache
-        int loff = l * p->seq_len * kv_dim; // kv cache layer offset for convenience
-        s->k = s->key_cache + loff + pos * kv_dim;
-        s->v = s->value_cache + loff + pos * kv_dim;
+        s->k = pagetable_key_ptr(s->kv_pages, l, pos);
+        s->v = pagetable_value_ptr(s->kv_pages, l, pos);
 
         // qkv matmuls for this position
         matmul(s->q, s->xb, w->wq + l*dim*dim, dim, dim);
@@ -289,8 +290,7 @@ float* forward(Transformer* transformer, int token, int pos) {
             // iterate over all timesteps, including the current one
             for (int t = 0; t <= pos; t++) {
                 // get the key vector for this head and at this timestep
-                float* k = s->key_cache + loff + t * kv_dim + (h / kv_mul) * head_size;
-                // calculate the attention score as the dot product of q and k
+                float* k = pagetable_key_ptr(s->kv_pages, l, t) + (h / kv_mul) * head_size;                // calculate the attention score as the dot product of q and k
                 float score = 0.0f;
                 for (int i = 0; i < head_size; i++) {
                     score += q[i] * k[i];
@@ -308,8 +308,7 @@ float* forward(Transformer* transformer, int token, int pos) {
             memset(xb, 0, head_size * sizeof(float));
             for (int t = 0; t <= pos; t++) {
                 // get the value vector for this head and at this timestep
-                float* v = s->value_cache + loff + t * kv_dim + (h / kv_mul) * head_size;
-                // get the attention weight for this timestep
+                float* v = pagetable_value_ptr(s->kv_pages, l, t) + (h / kv_mul) * head_size;                // get the attention weight for this timestep
                 float a = att[t];
                 // accumulate the weighted value into xb
                 for (int i = 0; i < head_size; i++) {
