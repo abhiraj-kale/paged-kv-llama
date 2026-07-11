@@ -14,6 +14,9 @@ typedef struct PageTableHandle PageTableHandle;
 
 PagePoolHandle* pagepool_create(int num_pages, int n_layers, int kv_dim);
 void pagepool_destroy(PagePoolHandle* pool);
+int pagepool_total_pages(PagePoolHandle* pool);
+int pagepool_pages_in_use(PagePoolHandle* pool);
+int pagepool_peak_pages_used(PagePoolHandle* pool);
 
 PageTableHandle* pagetable_create(PagePoolHandle* pool, int kv_dim);
 void pagetable_destroy(PageTableHandle* table);

@@ -22,6 +22,8 @@ int PagePool::allocate_page() {
     }
     int page_id = free_list_.back();
     free_list_.pop_back();
+    int in_use = (int)key_pages_.size() - (int)free_list_.size();
+    if (in_use > peak_in_use_) peak_in_use_ = in_use;
     return page_id;
 }
 
@@ -37,20 +39,38 @@ float* PagePool::value_data(int page_id) {
     return value_pages_[page_id].data.data();
 }
 
+int PagePool::total_pages() const {
+    return (int)key_pages_.size();
+}
+
+int PagePool::pages_in_use() const {
+    return (int)key_pages_.size() - (int)free_list_.size();
+}
+
+int PagePool::peak_pages_used() const {
+    return peak_in_use_;
+}
+
 PageTable::PageTable(PagePool* pool, int kv_dim)
     : pool_(pool), kv_dim_(kv_dim) {}
 
-void PageTable::ensure_block(int logical_block) {
+bool PageTable::ensure_block(int logical_block) {
     while ((int)physical_page_ids_.size() <= logical_block) {
         int page_id = pool_->allocate_page();
+        if (page_id == -1) {
+            return false;  // pool exhausted — do not record a bogus page id
+        }
         physical_page_ids_.push_back(page_id);
     }
+    return true;
 }
 
 float* PageTable::key_ptr(int layer, int pos) {
     int logical_block = pos / PAGE_SIZE;
     int offset_in_block = pos % PAGE_SIZE;
-    ensure_block(logical_block);
+    if (!ensure_block(logical_block)) {
+        return nullptr;
+    }
     int page_id = physical_page_ids_[logical_block];
     float* page_base = pool_->key_data(page_id);
     return page_base + layer * PAGE_SIZE * kv_dim_ + offset_in_block * kv_dim_;
@@ -59,7 +79,9 @@ float* PageTable::key_ptr(int layer, int pos) {
 float* PageTable::value_ptr(int layer, int pos) {
     int logical_block = pos / PAGE_SIZE;
     int offset_in_block = pos % PAGE_SIZE;
-    ensure_block(logical_block);
+    if (!ensure_block(logical_block)) {
+        return nullptr;
+    }
     int page_id = physical_page_ids_[logical_block];
     float* page_base = pool_->value_data(page_id);
     return page_base + layer * PAGE_SIZE * kv_dim_ + offset_in_block * kv_dim_;
@@ -79,6 +101,18 @@ PagePoolHandle* pagepool_create(int num_pages, int n_layers, int kv_dim) {
 
 void pagepool_destroy(PagePoolHandle* pool) {
     delete reinterpret_cast<PagePool*>(pool);
+}
+
+int pagepool_total_pages(PagePoolHandle* pool) {
+    return reinterpret_cast<PagePool*>(pool)->total_pages();
+}
+
+int pagepool_pages_in_use(PagePoolHandle* pool) {
+    return reinterpret_cast<PagePool*>(pool)->pages_in_use();
+}
+
+int pagepool_peak_pages_used(PagePoolHandle* pool) {
+    return reinterpret_cast<PagePool*>(pool)->peak_pages_used();
 }
 
 PageTableHandle* pagetable_create(PagePoolHandle* pool, int kv_dim) {

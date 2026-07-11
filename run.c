@@ -293,6 +293,10 @@ float* forward(Transformer* transformer, RunState* s, int token, int pos) {
         // key and value point to the kv cache
         s->k = pagetable_key_ptr(s->kv_pages, l, pos);
         s->v = pagetable_value_ptr(s->kv_pages, l, pos);
+        if (!s->k || !s->v) {
+            fprintf(stderr, "KV-cache pool exhausted (layer %llu, pos %d) — increase pool_pages\n", l, pos);
+            exit(EXIT_FAILURE);
+        }
 
         // qkv matmuls for this position
         matmul(s->q, s->xb, w->wq + l*dim*dim, dim, dim);
@@ -327,7 +331,13 @@ float* forward(Transformer* transformer, RunState* s, int token, int pos) {
             // iterate over all timesteps, including the current one
             for (int t = 0; t <= pos; t++) {
                 // get the key vector for this head and at this timestep
-                float* k = pagetable_key_ptr(s->kv_pages, l, t) + (h / kv_mul) * head_size;                // calculate the attention score as the dot product of q and k
+                float* k_base = pagetable_key_ptr(s->kv_pages, l, t);
+                if (!k_base) {
+                    fprintf(stderr, "KV-cache pool exhausted on read (layer %llu, pos %d)\n", l, t);
+                    exit(EXIT_FAILURE);
+                }
+                float* k = k_base + (h / kv_mul) * head_size;
+                // calculate the attention score as the dot product of q and k
                 float score = 0.0f;
                 for (int i = 0; i < head_size; i++) {
                     score += q[i] * k[i];
@@ -345,7 +355,13 @@ float* forward(Transformer* transformer, RunState* s, int token, int pos) {
             memset(xb, 0, head_size * sizeof(float));
             for (int t = 0; t <= pos; t++) {
                 // get the value vector for this head and at this timestep
-                float* v = pagetable_value_ptr(s->kv_pages, l, t) + (h / kv_mul) * head_size;                // get the attention weight for this timestep
+                float* v_base = pagetable_value_ptr(s->kv_pages, l, t);
+                if (!v_base) {
+                    fprintf(stderr, "KV-cache pool exhausted on read (layer %llu, pos %d)\n", l, t);
+                    exit(EXIT_FAILURE);
+                }
+                float* v = v_base + (h / kv_mul) * head_size;
+                // get the attention weight for this timestep
                 float a = att[t];
                 // accumulate the weighted value into xb
                 for (int i = 0; i < head_size; i++) {
@@ -840,9 +856,10 @@ void generate_batch(Transformer* transformer, Tokenizer* tokenizer, Sampler* sam
     }
 
     int naive_pages = num_seqs * ((p->seq_len + PAGE_SIZE - 1) / PAGE_SIZE);
+    int peak_used = pagepool_peak_pages_used(shared_pool);   // real measured high-water mark, not just configured capacity
     printf("\n=== Batch generation complete: %d sequences ===\n", num_seqs);
-    printf("Shared pool: %d pages used | Naive (one pool per sequence, sized for max context): %d pages\n\n",
-           pool_pages, naive_pages);
+    printf("Pool capacity: %d pages | Peak actually used: %d pages | Naive (one pool per sequence, sized for max context): %d pages\n\n",
+           pool_pages, peak_used, naive_pages);
     for (int i = 0; i < num_seqs; i++) {
         printf("[Seq %d] \"%s\"%s\n\n", i, seqs[i].prompt, seqs[i].output);
         free(seqs[i].prompt_tokens);
