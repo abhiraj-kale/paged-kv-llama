@@ -19,7 +19,7 @@ import EnginePanel from './components/EnginePanel'
 import ComparisonStrip from './components/ComparisonStrip'
 
 const REPO_URL = 'https://github.com/abhiraj-kale/paged-kv-llama'
-const PETERDB_URL = 'https://github.com/abhiraj-kale/cs222p-spring26-abhiraj-kale'
+const PETERDB_URL = 'https://github.com/abhiraj-kale/Database-Storage-Engine'
 const PROFILE_URL = 'https://github.com/abhiraj-kale'
 const UPSTREAM_URL = 'https://github.com/karpathy/llama2.c'
 const PAPER_URL = 'https://arxiv.org/abs/2309.06180'

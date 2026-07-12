@@ -11,7 +11,7 @@ Multiple conversations run concurrently while sharing a single, fixed memory
 budget instead of each reserving worst-case space up front.
 
 The design isn't borrowed from vLLM's code — it's carried over from my previous
-from-scratch project, **[PeterDB](https://github.com/abhiraj-kale/cs222p-spring26-abhiraj-kale)**,
+from-scratch project, **[PeterDB](https://github.com/abhiraj-kale/Database-Storage-Engine)**,
 a disk-based database storage engine in C++ (slotted pages, a persistent B+-tree
 index, an iterator query engine). A paged KV-cache turns out to be the same
 data-structure problem as a paged heap file, and building it twice — once for
@@ -141,7 +141,7 @@ changed — the K/V write, the K read, and the V read — each swapping flat poi
 arithmetic for a `pagetable_*_ptr()` call. `forward()` now takes an explicit
 `RunState*` so multiple sequences can each drive it with their own cache.
 
-### Design lineage — [PeterDB](https://github.com/abhiraj-kale/cs222p-spring26-abhiraj-kale), my storage engine
+### Design lineage — [PeterDB](https://github.com/abhiraj-kale/Database-Storage-Engine), my storage engine
 
 Before this project I built **PeterDB**, a disk-based relational storage engine
 in C++, also from scratch: paged heap files using slotted pages with

@@ -34,8 +34,10 @@ COPY tokenizer.bin README.md ./
 COPY assets ./assets
 COPY demo/backend/main.py .
 COPY --from=frontend /fe/dist ./static
-# demo model (~167MB). Swap via MODEL_PATH + a mounted volume for other checkpoints.
-RUN wget -q https://huggingface.co/karpathy/tinyllamas/resolve/main/stories42M.bin
+# demo models: 42M (default — better memory-ratio story) and 15M (fallback for
+# weak-CPU hosts — set MODEL_PATH=/app/stories15M.bin, no rebuild needed)
+RUN wget -q https://huggingface.co/karpathy/tinyllamas/resolve/main/stories42M.bin \
+ && wget -q https://huggingface.co/karpathy/tinyllamas/resolve/main/stories15M.bin
 ENV MODEL_PATH=/app/stories42M.bin \
     TOKENIZER_PATH=/app/tokenizer.bin \
     NAIVE_BIN=/app/bin/run_naive \

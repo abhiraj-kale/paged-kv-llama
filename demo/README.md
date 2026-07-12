@@ -54,6 +54,19 @@ docker build -f demo/Dockerfile -t paged-kv-llama-demo .
 docker run -p 8000:8000 paged-kv-llama-demo
 ```
 
+## Deploy to Render (free tier)
+
+The repo root has a [`render.yaml`](../render.yaml) blueprint:
+
+1. Push the repo to GitHub (already done if you're reading this there)
+2. [dashboard.render.com](https://dashboard.render.com) → **New +** → **Blueprint** → connect `abhiraj-kale/paged-kv-llama`
+3. Render reads `render.yaml`, builds `demo/Dockerfile`, and gives you a public `*.onrender.com` URL
+
+Free-tier notes: the service sleeps after ~15 min idle (first visit after that
+takes ~1 min to wake), and the CPU is weak — if generation crawls, set env var
+`MODEL_PATH=/app/stories15M.bin` in the service settings (both models are baked
+into the image; the app adapts all its memory math to whichever model is loaded).
+
 ## Configuration (env vars)
 
 | Variable | Default | Purpose |
