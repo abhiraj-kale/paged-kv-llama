@@ -16,6 +16,11 @@ budget instead of each reserving worst-case space up front.
 > The PagedAttention algorithm itself is from the vLLM paper — this is a
 > from-scratch re-implementation to understand it, not a novel invention.
 
+> **🎮 Try it live:** the [interactive demo](demo/) races both engines in your
+> browser — same prompt, same seed, identical story, with live token streaming
+> and a memory meter showing the paged cache growing page by page.
+> `docker build -f demo/Dockerfile -t demo . && docker run -p 8000:8000 demo`
+
 ---
 
 ## The idea in one picture

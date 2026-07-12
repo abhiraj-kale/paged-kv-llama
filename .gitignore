@@ -15,3 +15,11 @@ CMakeCache.txt
 # IDE
 .idea/
 .vscode/
+
+# demo app — generated / local-only
+__pycache__/
+demo/backend/bin/
+demo/backend/static/
+demo/backend/.venv/
+demo/frontend/node_modules/
+demo/frontend/dist/

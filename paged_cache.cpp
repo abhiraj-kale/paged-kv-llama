@@ -7,11 +7,11 @@
 
 PagePool::PagePool(int num_pages, int n_layers, int kv_dim)
     : n_layers_(n_layers), kv_dim_(kv_dim) {
+    // page slots exist up front, but their storage is allocated lazily in
+    // allocate_page() — so pages-in-use equals memory actually committed
     key_pages_.resize(num_pages);
     value_pages_.resize(num_pages);
     for (int i = 0; i < num_pages; i++) {
-        key_pages_[i].data.resize(n_layers * PAGE_SIZE * kv_dim);
-        value_pages_[i].data.resize(n_layers * PAGE_SIZE * kv_dim);
         free_list_.push_back(i);
     }
 }
@@ -22,6 +22,12 @@ int PagePool::allocate_page() {
     }
     int page_id = free_list_.back();
     free_list_.pop_back();
+    if (key_pages_[page_id].data.empty()) {
+        // first time this physical page is handed out: allocate its storage.
+        // freed pages keep their buffers, so reuse after free costs nothing.
+        key_pages_[page_id].data.resize((size_t)n_layers_ * PAGE_SIZE * kv_dim_);
+        value_pages_[page_id].data.resize((size_t)n_layers_ * PAGE_SIZE * kv_dim_);
+    }
     int in_use = (int)key_pages_.size() - (int)free_list_.size();
     if (in_use > peak_in_use_) peak_in_use_ = in_use;
     return page_id;
