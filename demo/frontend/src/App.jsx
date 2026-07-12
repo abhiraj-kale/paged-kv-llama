@@ -6,9 +6,9 @@ import {
 import GitHubIcon from '@mui/icons-material/GitHub'
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
 import GridViewRoundedIcon from '@mui/icons-material/GridViewRounded'
-import ArticleOutlinedIcon from '@mui/icons-material/ArticleOutlined'
 import SchoolOutlinedIcon from '@mui/icons-material/SchoolOutlined'
 import CallSplitIcon from '@mui/icons-material/CallSplit'
+import StorageIcon from '@mui/icons-material/Storage'
 
 import { fetchConfig } from './api'
 import useEngineStream from './useEngineStream'
@@ -19,6 +19,8 @@ import EnginePanel from './components/EnginePanel'
 import ComparisonStrip from './components/ComparisonStrip'
 
 const REPO_URL = 'https://github.com/abhiraj-kale/paged-kv-llama'
+const PETERDB_URL = 'https://github.com/abhiraj-kale/cs222p-spring26-abhiraj-kale'
+const PROFILE_URL = 'https://github.com/abhiraj-kale'
 const UPSTREAM_URL = 'https://github.com/karpathy/llama2.c'
 const PAPER_URL = 'https://arxiv.org/abs/2309.06180'
 
@@ -78,6 +80,10 @@ export default function App() {
               <ListItemIcon><GitHubIcon fontSize="small" /></ListItemIcon>
               <ListItemText primary="This project" secondary="abhiraj-kale/paged-kv-llama" />
             </MenuItem>
+            <MenuItem component="a" href={PETERDB_URL} target="_blank" rel="noreferrer" onClick={() => setGhAnchor(null)}>
+              <ListItemIcon><StorageIcon fontSize="small" /></ListItemIcon>
+              <ListItemText primary="PeterDB — my storage engine" secondary="where this design came from" />
+            </MenuItem>
             <MenuItem component="a" href={UPSTREAM_URL} target="_blank" rel="noreferrer" onClick={() => setGhAnchor(null)}>
               <ListItemIcon><CallSplitIcon fontSize="small" /></ListItemIcon>
               <ListItemText primary="Built on" secondary="karpathy/llama2.c" />
@@ -109,6 +115,13 @@ export default function App() {
             so they produce the <em>identical</em> story. The difference is how they manage the KV-cache:
             one reserves worst-case memory up front, the other pages it in on demand.
           </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 1.5 }}>
+            A from-scratch systems project by{' '}
+            <Link href={PROFILE_URL} target="_blank" rel="noreferrer">Abhiraj Kale</Link>
+            {' '}— the paging design comes from{' '}
+            <Link href={PETERDB_URL} target="_blank" rel="noreferrer">PeterDB</Link>,
+            the C++ database storage engine I built before this.
+          </Typography>
         </Box>
 
         <PromptBar
@@ -128,10 +141,14 @@ export default function App() {
 
         <Box sx={{ mt: 6, textAlign: 'center' }}>
           <Typography variant="body2" color="text.secondary">
-            Built on{' '}
+            Built from scratch by{' '}
+            <Link href={PROFILE_URL} target="_blank" rel="noreferrer">Abhiraj Kale</Link>
+            {' '}on{' '}
             <Link href={UPSTREAM_URL} target="_blank" rel="noreferrer">karpathy/llama2.c</Link>
             {' '}· PagedAttention (<Link href={PAPER_URL} target="_blank" rel="noreferrer">Kwon et al.</Link>)
-            reimplemented from scratch in C++ ·{' '}
+            reimplemented in C++ · paging design from{' '}
+            <Link href={PETERDB_URL} target="_blank" rel="noreferrer">PeterDB</Link>
+            {' '}·{' '}
             <Link href={REPO_URL} target="_blank" rel="noreferrer">source & benchmarks</Link>
           </Typography>
           {config && (
@@ -143,7 +160,9 @@ export default function App() {
         </Box>
       </Container>
 
-      <IntroDialog open={introOpen} onClose={() => setIntroOpen(false)} onAbout={() => { setIntroOpen(false); setAboutOpen(true) }} />
+      <IntroDialog open={introOpen} onClose={() => setIntroOpen(false)}
+        onAbout={() => { setIntroOpen(false); setAboutOpen(true) }}
+        profileUrl={PROFILE_URL} peterDbUrl={PETERDB_URL} />
       <AboutDialog open={aboutOpen} onClose={() => setAboutOpen(false)} repoUrl={REPO_URL} />
     </Box>
   )

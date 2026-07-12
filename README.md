@@ -1,6 +1,8 @@
 # paged-kv-llama
 
-**A paged KV-cache for LLM inference, built from scratch in C++ on top of [karpathy/llama2.c](https://github.com/karpathy/llama2.c).**
+**A paged KV-cache for LLM inference, built from scratch in C++ by
+[Abhiraj Kale](https://github.com/abhiraj-kale) on top of
+[karpathy/llama2.c](https://github.com/karpathy/llama2.c).**
 
 This project re-implements the core memory-management idea behind [vLLM's
 PagedAttention](https://arxiv.org/abs/2309.06180) — non-contiguous, on-demand,
@@ -8,13 +10,21 @@ pooled KV-cache pages — and wires it into a real transformer inference engine.
 Multiple conversations run concurrently while sharing a single, fixed memory
 budget instead of each reserving worst-case space up front.
 
+The design isn't borrowed from vLLM's code — it's carried over from my previous
+from-scratch project, **[PeterDB](https://github.com/abhiraj-kale/cs222p-spring26-abhiraj-kale)**,
+a disk-based database storage engine in C++ (slotted pages, a persistent B+-tree
+index, an iterator query engine). A paged KV-cache turns out to be the same
+data-structure problem as a paged heap file, and building it twice — once for
+disk, once for inference — is the whole point of this repo.
+
 > **Attribution / honesty:** the transformer forward pass, tokenizer, and
 > sampler are Andrej Karpathy's `llama2.c` (preserved in
 > [`README.llama2c.md`](README.llama2c.md)). Everything in
 > [`paged_cache.hpp`](paged_cache.hpp)/[`.cpp`](paged_cache.cpp), the C/C++
-> interop layer, the multi-sequence scheduler, and the benchmarks is my work.
-> The PagedAttention algorithm itself is from the vLLM paper — this is a
-> from-scratch re-implementation to understand it, not a novel invention.
+> interop layer, the multi-sequence scheduler, the benchmarks, and the
+> [interactive demo](demo/) is my (Abhiraj Kale's) work. The PagedAttention
+> algorithm itself is from the vLLM paper — this is a from-scratch
+> re-implementation to understand it, not a novel invention.
 
 > **🎮 Try it live:** the [interactive demo](demo/) races both engines in your
 > browser — same prompt, same seed, identical story, with live token streaming
@@ -131,17 +141,27 @@ changed — the K/V write, the K read, and the V read — each swapping flat poi
 arithmetic for a `pagetable_*_ptr()` call. `forward()` now takes an explicit
 `RunState*` so multiple sequences can each drive it with their own cache.
 
-### Design lineage — slotted-page storage engine
+### Design lineage — [PeterDB](https://github.com/abhiraj-kale/cs222p-spring26-abhiraj-kale), my storage engine
 
-The `PagePool`/`PageTable` split is the same design as a disk-based DB storage
-engine's slotted pages:
+Before this project I built **PeterDB**, a disk-based relational storage engine
+in C++, also from scratch: paged heap files using slotted pages with
+header-based offset directories (O(1) field access, variable-length records), a
+relational metadata catalog, a persistent B+-tree index with recursive node
+splitting/merging and leaf-level sibling pointers, and an iterator-based query
+engine (selection, projection, block-nested-loop / index-nested-loop /
+grace-hash joins). The `PagePool`/`PageTable` split here is that same design,
+pointed at memory instead of disk:
 
-| Storage engine (on disk) | This project (in memory) |
+| PeterDB (on disk) | This project (in memory) |
 |---|---|
 | record id → (page, slot) directory | token position → (physical page, offset) page table |
 | shared pool of fixed-size pages | shared pool of fixed-size KV pages |
 | free list reclaims deleted records' space | free list reclaims a finished sequence's pages |
 | allocate a new page only when one fills | allocate a new page only as a sequence grows |
+
+Recognizing that a production LLM-serving problem (PagedAttention) is the same
+data-structure problem I'd already solved for a database is what motivated this
+project in the first place.
 
 ---
 
