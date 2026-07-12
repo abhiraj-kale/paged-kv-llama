@@ -4,6 +4,7 @@
 
 #include "paged_cache.hpp"
 #include "paged_cache_c_api.h"
+#include <cstddef>  // std::size_t — g++ 12 doesn't expose plain ::size_t via <vector>
 
 PagePool::PagePool(int num_pages, int n_layers, int kv_dim)
     : n_layers_(n_layers), kv_dim_(kv_dim) {
@@ -25,8 +26,8 @@ int PagePool::allocate_page() {
     if (key_pages_[page_id].data.empty()) {
         // first time this physical page is handed out: allocate its storage.
         // freed pages keep their buffers, so reuse after free costs nothing.
-        key_pages_[page_id].data.resize((size_t)n_layers_ * PAGE_SIZE * kv_dim_);
-        value_pages_[page_id].data.resize((size_t)n_layers_ * PAGE_SIZE * kv_dim_);
+        key_pages_[page_id].data.resize((std::size_t)n_layers_ * PAGE_SIZE * kv_dim_);
+        value_pages_[page_id].data.resize((std::size_t)n_layers_ * PAGE_SIZE * kv_dim_);
     }
     int in_use = (int)key_pages_.size() - (int)free_list_.size();
     if (in_use > peak_in_use_) peak_in_use_ = in_use;
