@@ -26,9 +26,11 @@ disk, once for inference — is the whole point of this repo.
 > algorithm itself is from the vLLM paper — this is a from-scratch
 > re-implementation to understand it, not a novel invention.
 
-> **🎮 Try it live:** the [interactive demo](demo/) races both engines in your
-> browser — same prompt, same seed, identical story, with live token streaming
-> and a memory meter showing the paged cache growing page by page.
+> **🎮 Try it live: [paged-kv-llama-demo.onrender.com](https://paged-kv-llama-demo.onrender.com)**
+> — the [interactive demo](demo/) races both engines in your browser: same
+> prompt, same seed, identical story, with live token streaming and a memory
+> meter showing the paged cache growing page by page. *(Free-tier hosting —
+> the first visit after idle takes ~1 min to wake.)* Or run it yourself:
 > `docker build -f demo/Dockerfile -t demo . && docker run -p 8000:8000 demo`
 
 ---
