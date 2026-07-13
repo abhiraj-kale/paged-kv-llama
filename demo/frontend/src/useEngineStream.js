@@ -6,7 +6,7 @@ const initial = {
   text: '',
   tokens: 0,
   ms: null,
-  firstMs: null, // time of first token — excludes model-load latency from tok/s
+  firstMs: null, // time of first token - excludes model-load latency from tok/s
   tokPerS: null,
   kvBytes: 0,
   kvPages: 0,

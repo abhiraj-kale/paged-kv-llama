@@ -17,6 +17,7 @@ import AboutDialog from './components/AboutDialog'
 import PromptBar from './components/PromptBar'
 import EnginePanel from './components/EnginePanel'
 import ComparisonStrip from './components/ComparisonStrip'
+import LiveSavingsBanner from './components/LiveSavingsBanner'
 
 const REPO_URL = 'https://github.com/abhiraj-kale/paged-kv-llama'
 const PETERDB_URL = 'https://github.com/abhiraj-kale/Database-Storage-Engine'
@@ -53,7 +54,7 @@ export default function App() {
     const ctrl = new AbortController()
     abortRef.current = ctrl
     const params = { prompt: p, steps, seed: newSeed, signal: ctrl.signal }
-    // both engines race in parallel — same prompt, same seed
+    // both engines race in parallel - same prompt, same seed
     Promise.allSettled([startNaive(params), startPaged(params)]).then(() => setRunning(false))
   }
 
@@ -82,7 +83,7 @@ export default function App() {
             </MenuItem>
             <MenuItem component="a" href={PETERDB_URL} target="_blank" rel="noreferrer" onClick={() => setGhAnchor(null)}>
               <ListItemIcon><StorageIcon fontSize="small" /></ListItemIcon>
-              <ListItemText primary="PeterDB — my storage engine" secondary="where this design came from" />
+              <ListItemText primary="PeterDB - my storage engine" secondary="where this design came from" />
             </MenuItem>
             <MenuItem component="a" href={UPSTREAM_URL} target="_blank" rel="noreferrer" onClick={() => setGhAnchor(null)}>
               <ListItemIcon><CallSplitIcon fontSize="small" /></ListItemIcon>
@@ -111,14 +112,14 @@ export default function App() {
             <Box component="span" sx={{ color: 'success.main' }}>A fraction of the memory.</Box>
           </Typography>
           <Typography color="text.secondary" sx={{ maxWidth: 720, mx: 'auto' }}>
-            Both panels run a real C inference engine on the same prompt with the same random seed —
+            Both panels run a real C inference engine on the same prompt with the same random seed,
             so they produce the <em>identical</em> story. The difference is how they manage the KV-cache:
             one reserves worst-case memory up front, the other pages it in on demand.
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mt: 1.5 }}>
             A from-scratch systems project by{' '}
-            <Link href={PROFILE_URL} target="_blank" rel="noreferrer">Abhiraj Kale</Link>
-            {' '}— the paging design comes from{' '}
+            <Link href={PROFILE_URL} target="_blank" rel="noreferrer">Abhiraj Kale</Link>.
+            The paging design comes from{' '}
             <Link href={PETERDB_URL} target="_blank" rel="noreferrer">PeterDB</Link>,
             the C++ database storage engine I built before this.
           </Typography>
@@ -131,6 +132,8 @@ export default function App() {
           onGenerate={onGenerate} onStop={onStop}
           maxSteps={config ? Math.min(300, config.seq_len) : 300}
         />
+
+        <LiveSavingsBanner naive={naive} paged={paged} config={config} />
 
         <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 2.5, mt: 2.5 }}>
           <EnginePanel variant="naive" state={naive} config={config} steps={steps} />

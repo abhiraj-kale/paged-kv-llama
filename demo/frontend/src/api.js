@@ -21,7 +21,7 @@ export async function streamGenerate({ prompt, engine, steps, seed, signal, onEv
     body: JSON.stringify({ prompt, engine, steps, seed }),
     signal,
   })
-  if (!res.ok) throw new Error(`generate(${engine}): HTTP ${res.status} — ${await res.text()}`)
+  if (!res.ok) throw new Error(`generate(${engine}): HTTP ${res.status} - ${await res.text()}`)
 
   const reader = res.body.getReader()
   const decoder = new TextDecoder()
@@ -40,13 +40,13 @@ export async function streamGenerate({ prompt, engine, steps, seed, signal, onEv
 }
 
 export function fmtBytes(bytes) {
-  if (bytes == null) return '—'
+  if (bytes == null) return '-'
   if (bytes < 1024) return `${bytes} B`
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KiB`
   return `${(bytes / (1024 * 1024)).toFixed(1)} MiB`
 }
 
 export function fmtSeconds(ms) {
-  if (ms == null) return '—'
+  if (ms == null) return '-'
   return `${(ms / 1000).toFixed(1)}s`
 }

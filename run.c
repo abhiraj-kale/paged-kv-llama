@@ -111,7 +111,7 @@ void free_run_state(RunState* s) {
 }
 
 // Like malloc_run_state, but draws its PageTable from an EXTERNALLY OWNED pool
-// instead of creating a private one — this is what lets multiple sequences
+// instead of creating a private one - this is what lets multiple sequences
 // share a single memory budget instead of each reserving its own worst case.
 void malloc_run_state_shared(RunState* s, Config* p, PagePoolHandle* pool) {
     int kv_dim = (p->dim * p->n_kv_heads) / p->n_heads;
@@ -121,7 +121,7 @@ void malloc_run_state_shared(RunState* s, Config* p, PagePoolHandle* pool) {
     s->hb = calloc(p->hidden_dim, sizeof(float));
     s->hb2 = calloc(p->hidden_dim, sizeof(float));
     s->q = calloc(p->dim, sizeof(float));
-    s->page_pool = NULL; // not owned by this RunState — do not destroy it here
+    s->page_pool = NULL; // not owned by this RunState - do not destroy it here
     s->kv_pages = pagetable_create(pool, kv_dim);
     s->att = calloc(p->n_heads * p->seq_len, sizeof(float));
     s->logits = calloc(p->vocab_size, sizeof(float));
@@ -294,7 +294,7 @@ float* forward(Transformer* transformer, RunState* s, int token, int pos) {
         s->k = pagetable_key_ptr(s->kv_pages, l, pos);
         s->v = pagetable_value_ptr(s->kv_pages, l, pos);
         if (!s->k || !s->v) {
-            fprintf(stderr, "KV-cache pool exhausted (layer %llu, pos %d) — increase pool_pages\n", l, pos);
+            fprintf(stderr, "KV-cache pool exhausted (layer %llu, pos %d) - increase pool_pages\n", l, pos);
             exit(EXIT_FAILURE);
         }
 
@@ -794,7 +794,7 @@ typedef struct {
 
 // Runs num_seqs conversations CONCURRENTLY, round-robin, one token per sequence
 // per tick, all drawing KV-cache pages from one SHARED pool sized by pool_pages
-// (not num_seqs * the model's max context — that's the whole point of paging).
+// (not num_seqs * the model's max context - that's the whole point of paging).
 // Each sequence releases its pages back to the pool the moment it finishes,
 // so the next sequence at that slot can immediately reuse them.
 void generate_batch(Transformer* transformer, Tokenizer* tokenizer, Sampler* sampler,

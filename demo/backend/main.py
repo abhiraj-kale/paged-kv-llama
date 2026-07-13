@@ -1,8 +1,8 @@
 """
 Demo server for paged-kv-llama.
 
-Streams tokens from two real inference engines — the original flat-buffer
-llama2.c (run_naive) and this project's paged KV-cache engine (run_paged) —
+Streams tokens from two real inference engines - the original flat-buffer
+llama2.c (run_naive) and this project's paged KV-cache engine (run_paged) -
 as NDJSON events, so the frontend can race them side by side with live
 token counts, timing, and KV-cache memory accounting.
 """
@@ -49,7 +49,7 @@ def find_model() -> Path:
         if cand.exists():
             return cand
     raise FileNotFoundError(
-        "no model checkpoint found — download one, e.g.\n"
+        "no model checkpoint found - download one, e.g.\n"
         "  wget https://huggingface.co/karpathy/tinyllamas/resolve/main/stories42M.bin"
     )
 
@@ -122,7 +122,7 @@ def healthz():
 async def generate(req: GenerateRequest):
     binpath = PAGED_BIN if req.engine == "paged" else NAIVE_BIN
     if not binpath.exists():
-        raise HTTPException(500, f"engine binary missing: {binpath} — run build_engines.sh")
+        raise HTTPException(500, f"engine binary missing: {binpath} - run build_engines.sh")
     steps = min(req.steps, CFG["seq_len"])
     args = [
         str(binpath), str(MODEL),
@@ -139,7 +139,7 @@ async def generate(req: GenerateRequest):
             stderr=asyncio.subprocess.PIPE,
         )
         t0 = time.perf_counter()
-        t_first = None  # time of first token — separates model-load latency from decode speed
+        t_first = None  # time of first token - separates model-load latency from decode speed
         ntok = 0
         buf = b""
         try:
@@ -189,7 +189,7 @@ async def generate(req: GenerateRequest):
             else:
                 pages_used = CFG["naive_pages"]
                 kv_bytes = CFG["naive_bytes_kv"]
-            # decode throughput = tokens after the first, over time since the first —
+            # decode throughput = tokens after the first, over time since the first -
             # excludes model-load / time-to-first-token (the standard way to report it)
             decode_s = (time.perf_counter() - t_first) if t_first is not None else 0
             tok_per_s = round((ntok - 1) / decode_s, 2) if ntok > 1 and decode_s > 0 else 0
@@ -206,7 +206,7 @@ async def generate(req: GenerateRequest):
                 "peak_pages_measured": peak_pages,
             }) + "\n"
         finally:
-            # client disconnected or stream finished — never leave a stray process
+            # client disconnected or stream finished - never leave a stray process
             if proc.returncode is None:
                 proc.kill()
                 await proc.wait()

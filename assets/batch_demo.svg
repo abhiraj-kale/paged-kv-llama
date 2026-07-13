@@ -4,7 +4,7 @@
   <rect x="0" y="0" width="900" height="30" rx="8" fill="#161b22"/>
   <rect x="0" y="16" width="900" height="14" fill="#161b22"/>
   <circle cx="20" cy="15" r="6" fill="#ff5f56"/><circle cx="40" cy="15" r="6" fill="#ffbd2e"/><circle cx="60" cy="15" r="6" fill="#27c93f"/>
-  <text x="450" y="19" fill="#8b949e" font-size="12" text-anchor="middle">wsl — ./run stories110M.bin -m batch -q 4 -n 40</text>
+  <text x="450" y="19" fill="#8b949e" font-size="12" text-anchor="middle">wsl - ./run stories110M.bin -m batch -q 4 -n 40</text>
 
   <text font-size="13" xml:space="preserve">
     <tspan x="18" y="58" fill="#7ee787">$ ./run stories110M.bin -t 0.8 -s 42 -m batch -q 4 -n 40</tspan>

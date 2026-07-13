@@ -5,17 +5,17 @@
 [karpathy/llama2.c](https://github.com/karpathy/llama2.c).**
 
 This project re-implements the core memory-management idea behind [vLLM's
-PagedAttention](https://arxiv.org/abs/2309.06180) — non-contiguous, on-demand,
-pooled KV-cache pages — and wires it into a real transformer inference engine.
+PagedAttention](https://arxiv.org/abs/2309.06180) - non-contiguous, on-demand,
+pooled KV-cache pages - and wires it into a real transformer inference engine.
 Multiple conversations run concurrently while sharing a single, fixed memory
 budget instead of each reserving worst-case space up front.
 
-The design isn't borrowed from vLLM's code — it's carried over from my previous
+The design isn't borrowed from vLLM's code - it's carried over from my previous
 from-scratch project, **[PeterDB](https://github.com/abhiraj-kale/Database-Storage-Engine)**,
 a disk-based database storage engine in C++ (slotted pages, a persistent B+-tree
 index, an iterator query engine). A paged KV-cache turns out to be the same
-data-structure problem as a paged heap file, and building it twice — once for
-disk, once for inference — is the whole point of this repo.
+data-structure problem as a paged heap file, and building it twice - once for
+disk, once for inference - is the whole point of this repo.
 
 > **Attribution / honesty:** the transformer forward pass, tokenizer, and
 > sampler are Andrej Karpathy's `llama2.c` (preserved in
@@ -23,13 +23,13 @@ disk, once for inference — is the whole point of this repo.
 > [`paged_cache.hpp`](paged_cache.hpp)/[`.cpp`](paged_cache.cpp), the C/C++
 > interop layer, the multi-sequence scheduler, the benchmarks, and the
 > [interactive demo](demo/) is my (Abhiraj Kale's) work. The PagedAttention
-> algorithm itself is from the vLLM paper — this is a from-scratch
+> algorithm itself is from the vLLM paper - this is a from-scratch
 > re-implementation to understand it, not a novel invention.
 
 > **🎮 Try it live: [paged-kv-llama-demo.onrender.com](https://paged-kv-llama-demo.onrender.com)**
-> — the [interactive demo](demo/) races both engines in your browser: same
+> - the [interactive demo](demo/) races both engines in your browser: same
 > prompt, same seed, identical story, with live token streaming and a memory
-> meter showing the paged cache growing page by page. *(Free-tier hosting —
+> meter showing the paged cache growing page by page. *(Free-tier hosting -
 > the first visit after idle takes ~1 min to wake.)* Or run it yourself:
 > `docker build -f demo/Dockerfile -t demo . && docker run -p 8000:8000 demo`
 
@@ -39,7 +39,7 @@ disk, once for inference — is the whole point of this repo.
 
 Every token a model generates must be compared against the Key/Value vectors of
 every previous token (attention). Caching those K/V vectors avoids recomputing
-them — but the naive cache reserves one giant contiguous buffer *per sequence,
+them - but the naive cache reserves one giant contiguous buffer *per sequence,
 sized for the model's maximum context length*, even for a 10-token reply. On a
 server with many concurrent conversations, that wastes enormous amounts of
 memory.
@@ -57,10 +57,10 @@ table to map logical token positions to physical pages.**
 
 Three modes (`-m generate|chat|batch`):
 
-- **`generate`** — original single-sequence text generation, now backed by the
+- **`generate`** - original single-sequence text generation, now backed by the
   paged cache. Output is **byte-for-byte identical** to the original flat-buffer
-  implementation (verified — see below).
-- **`batch`** — runs `-q N` conversations concurrently via a round-robin
+  implementation (verified - see below).
+- **`batch`** - runs `-q N` conversations concurrently via a round-robin
   scheduler, all sharing one `PagePool`. Reports measured peak page usage vs.
   what the naive per-sequence approach would have reserved.
 
@@ -102,7 +102,7 @@ calling out:
    ~20s gap was traced to per-process startup overhead, a competing
    "allocation cost" hypothesis was measured and **rejected** (221ms, negligible),
    and the unexplained residual was honestly labeled likely measurement noise.
-   Real throughput gains require GPU-batched matmuls — explicitly out of scope.
+   Real throughput gains require GPU-batched matmuls - explicitly out of scope.
 
 ---
 
@@ -110,11 +110,11 @@ calling out:
 
 ### The core data structures ([`paged_cache.hpp`](paged_cache.hpp))
 
-- **`PagePool`** — owns all physical pages (one flat pool for K, one for V), a
+- **`PagePool`** - owns all physical pages (one flat pool for K, one for V), a
   free list of available page ids, and a peak-usage high-water mark.
   `allocate_page()` pops the free list (returns `-1` when exhausted);
   `free_page()` pushes back.
-- **`PageTable`** — per-sequence. Holds a `PagePool*` and an ordered list of the
+- **`PageTable`** - per-sequence. Holds a `PagePool*` and an ordered list of the
   physical page ids this sequence owns. `key_ptr(layer, pos)` /
   `value_ptr(layer, pos)` translate a logical position into a real pointer:
 
@@ -133,17 +133,17 @@ calling out:
 `run.c` is pure C and cannot parse C++ classes, so the C++ paging code is exposed
 through an `extern "C"` API of plain functions over **opaque handles**
 (`PagePoolHandle*`, `PageTableHandle*`). `run.c` only ever holds pointers and
-passes them back — it never sees the class definitions. This is the standard
+passes them back - it never sees the class definitions. This is the standard
 pattern for embedding C++ in a C codebase.
 
 ### Integration ([`run.c`](run.c))
 
 The transformer math is untouched. Only three cache touchpoints in `forward()`
-changed — the K/V write, the K read, and the V read — each swapping flat pointer
+changed - the K/V write, the K read, and the V read - each swapping flat pointer
 arithmetic for a `pagetable_*_ptr()` call. `forward()` now takes an explicit
 `RunState*` so multiple sequences can each drive it with their own cache.
 
-### Design lineage — [PeterDB](https://github.com/abhiraj-kale/Database-Storage-Engine), my storage engine
+### Design lineage - [PeterDB](https://github.com/abhiraj-kale/Database-Storage-Engine), my storage engine
 
 Before this project I built **PeterDB**, a disk-based relational storage engine
 in C++, also from scratch: paged heap files using slotted pages with
@@ -195,9 +195,9 @@ toolchain).
 
 ## Roadmap / honest limitations
 
-- CPU-only, single-threaded — no CUDA kernels yet. Paged attention on GPU is the
+- CPU-only, single-threaded - no CUDA kernels yet. Paged attention on GPU is the
   natural next step.
-- Shares KV-cache **memory** across sequences, but does not **batch compute** —
+- Shares KV-cache **memory** across sequences, but does not **batch compute** -
   no throughput gain, by design.
 - Benchmarks are single-sample (no repeated-trial averaging).
 - Fixed `PAGE_SIZE = 16`; no prefix sharing / copy-on-write across sequences yet

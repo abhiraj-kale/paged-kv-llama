@@ -1,8 +1,8 @@
-# Interactive demo — race the paged engine against the original
+# Interactive demo - race the paged engine against the original
 
 A full-stack web demo for [paged-kv-llama](../README.md). Type a story prompt and
 watch two real C inference engines complete it **simultaneously with the same
-random seed** — the original flat-buffer llama2.c on the left, this project's
+random seed** - the original flat-buffer llama2.c on the left, this project's
 paged KV-cache engine on the right. Live per-token streaming, timing, and a
 memory meter that shows the paged cache growing one 16-token page at a time
 against the naive engine's fixed worst-case reservation.
@@ -33,7 +33,7 @@ Then either build the frontend once and let the backend serve it:
 ```bash
 cd demo/frontend
 npm install
-npm run build          # outputs to demo/backend/static — refresh :8000
+npm run build          # outputs to demo/backend/static - refresh :8000
 ```
 
 …or run the Vite dev server with hot reload (proxies /api to :8000):
@@ -43,7 +43,7 @@ npm run dev            # http://localhost:5173
 ```
 
 > **WSL tip:** keep the model and binaries on the Linux filesystem (e.g. `~/demo/`)
-> and point `MODEL_PATH` / `NAIVE_BIN` / `PAGED_BIN` at them — reading the model
+> and point `MODEL_PATH` / `NAIVE_BIN` / `PAGED_BIN` at them - reading the model
 > through `/mnt/c` costs ~10x on time-to-first-token.
 
 ## Docker (one container, frontend included)
@@ -63,7 +63,7 @@ The repo root has a [`render.yaml`](../render.yaml) blueprint:
 3. Render reads `render.yaml`, builds `demo/Dockerfile`, and gives you a public `*.onrender.com` URL
 
 Free-tier notes: the service sleeps after ~15 min idle (first visit after that
-takes ~1 min to wake), and the CPU is weak — if generation crawls, set env var
+takes ~1 min to wake), and the CPU is weak - if generation crawls, set env var
 `MODEL_PATH=/app/stories15M.bin` in the service settings (both models are baked
 into the image; the app adapts all its memory math to whichever model is loaded).
 
@@ -81,5 +81,5 @@ into the image; the app adapts all its memory math to whichever model is loaded)
 - `POST /api/generate` `{prompt, engine: "naive"|"paged", steps, seed}` →
   NDJSON stream of `start` / `token` (text, count, elapsed ms, kv bytes+pages) /
   `done` (totals, decode tok/s, ttft, measured peak pages) events
-- `GET /api/config` — model dims + memory math parsed from the checkpoint header
-- `GET /api/readme` — the project README (rendered in the About dialog)
+- `GET /api/config` - model dims + memory math parsed from the checkpoint header
+- `GET /api/readme` - the project README (rendered in the About dialog)

@@ -15,7 +15,7 @@ export default function PromptBar({
           fullWidth
           autoFocus
           label="Start a story"
-          placeholder='e.g. "One day, a robot" — press Enter to race both engines'
+          placeholder='e.g. "One day, a robot" then press Enter to race both engines'
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
           onKeyDown={(e) => {
@@ -47,10 +47,10 @@ export default function PromptBar({
         )}
       </Stack>
       {seed != null && (
-        <Tooltip title="Both engines receive this exact seed, so their sampling decisions — and therefore their stories — are identical.">
+        <Tooltip title="Both engines receive this exact seed, so their sampling decisions, and therefore their stories, are identical.">
           <Chip
             icon={<CasinoOutlinedIcon />}
-            label={`seed ${seed} — shared by both engines`}
+            label={`seed ${seed}, shared by both engines`}
             size="small" variant="outlined"
             sx={{ mt: 1.5, color: 'text.secondary' }}
           />

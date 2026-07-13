@@ -1,7 +1,7 @@
 #pragma once
 
 #include <vector>
-#include "paged_cache_c_api.h"  // defines PAGE_SIZE — shared with run.c
+#include "paged_cache_c_api.h"  // defines PAGE_SIZE - shared with run.c
 
 struct Page {
     std::vector<float> data;
@@ -17,7 +17,7 @@ public:
     float* key_data(int page_id);
     float* value_data(int page_id);
 
-    // usage introspection — for real measured benchmarking, not just configured capacity
+    // usage introspection - for real measured benchmarking, not just configured capacity
     int total_pages() const;
     int pages_in_use() const;
     int peak_pages_used() const;
@@ -35,7 +35,7 @@ class PageTable {
 public:
     PageTable(PagePool* pool, int kv_dim);
 
-    // return nullptr if the shared pool is exhausted — caller MUST check
+    // return nullptr if the shared pool is exhausted - caller MUST check
     float* key_ptr(int layer, int pos);
     float* value_ptr(int layer, int pos);
     void release();

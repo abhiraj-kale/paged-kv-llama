@@ -22,11 +22,11 @@ export default function ComparisonStrip({ naive, paged, config }) {
             <Typography variant="subtitle2">
               {identical
                 ? 'Byte-identical output'
-                : 'Outputs differ — unexpected, please file an issue'}
+                : 'Outputs differ (unexpected, please file an issue)'}
             </Typography>
             <Typography variant="caption" color="text.secondary">
               {identical
-                ? 'Same seed, same story, token for token — the paged engine changes memory layout, not results.'
+                ? 'Same seed, same story, token for token. The paged engine changes memory layout, not results.'
                 : 'The two engines should always produce the same text for the same seed.'}
             </Typography>
           </Box>
@@ -43,7 +43,7 @@ export default function ComparisonStrip({ naive, paged, config }) {
               </Typography>
               <Typography variant="caption" color="text.secondary">
                 measured pages used ({paged.final?.peak_pages_measured ?? paged.kvPages}) vs worst-case
-                reservation ({config.naive_pages} pages) — this is what lets many chats share one pool
+                reservation ({config.naive_pages} pages). This is what lets many chats share one pool.
               </Typography>
             </Box>
           </Stack>

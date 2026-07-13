@@ -727,7 +727,7 @@ long time_in_ms() {
 // generation loop
 
 void generate(Transformer *transformer, Tokenizer *tokenizer, Sampler *sampler, char *prompt, int steps, int delim) {
-    // delim != 0: demo-server streaming mode — each decoded piece is followed
+    // delim != 0: demo-server streaming mode - each decoded piece is followed
     // by a 0x1F unit-separator byte so the server can split exact tokens
     char *empty_prompt = "";
     if (prompt == NULL) { prompt = empty_prompt; }

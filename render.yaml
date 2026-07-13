@@ -1,4 +1,4 @@
-# Render blueprint — deploys the interactive demo as a single Docker web service.
+# Render blueprint - deploys the interactive demo as a single Docker web service.
 # In the Render dashboard: New + -> Blueprint -> connect this repo, and this
 # file does the rest. Or create a Web Service manually with the same settings.
 services:
@@ -10,7 +10,7 @@ services:
     dockerContext: .
     healthCheckPath: /api/healthz
     envVars:
-      # free tier has a weak CPU — if generation feels too slow, switch to the
+      # free tier has a weak CPU - if generation feels too slow, switch to the
       # smaller model (already baked into the image, no rebuild needed):
       # - key: MODEL_PATH
       #   value: /app/stories15M.bin

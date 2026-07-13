@@ -4,12 +4,12 @@
 
 #include "paged_cache.hpp"
 #include "paged_cache_c_api.h"
-#include <cstddef>  // std::size_t — g++ 12 doesn't expose plain ::size_t via <vector>
+#include <cstddef>  // std::size_t - g++ 12 doesn't expose plain ::size_t via <vector>
 
 PagePool::PagePool(int num_pages, int n_layers, int kv_dim)
     : n_layers_(n_layers), kv_dim_(kv_dim) {
     // page slots exist up front, but their storage is allocated lazily in
-    // allocate_page() — so pages-in-use equals memory actually committed
+    // allocate_page() - so pages-in-use equals memory actually committed
     key_pages_.resize(num_pages);
     value_pages_.resize(num_pages);
     for (int i = 0; i < num_pages; i++) {
@@ -19,7 +19,7 @@ PagePool::PagePool(int num_pages, int n_layers, int kv_dim)
 
 int PagePool::allocate_page() {
     if (free_list_.empty()) {
-        return -1;  // pool exhausted — no pages left to give out
+        return -1;  // pool exhausted - no pages left to give out
     }
     int page_id = free_list_.back();
     free_list_.pop_back();
@@ -65,7 +65,7 @@ bool PageTable::ensure_block(int logical_block) {
     while ((int)physical_page_ids_.size() <= logical_block) {
         int page_id = pool_->allocate_page();
         if (page_id == -1) {
-            return false;  // pool exhausted — do not record a bogus page id
+            return false;  // pool exhausted - do not record a bogus page id
         }
         physical_page_ids_.push_back(page_id);
     }

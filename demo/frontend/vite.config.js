@@ -14,7 +14,7 @@ export default defineConfig({
     // built app is served by the FastAPI backend itself
     outDir: '../backend/static',
     emptyOutDir: true,
-    // keep vite's bundle out of /assets — that path serves the repo's
+    // keep vite's bundle out of /assets - that path serves the repo's
     // images (architecture diagram etc.) via the backend
     assetsDir: 'bundle',
   },

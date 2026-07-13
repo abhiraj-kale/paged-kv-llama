@@ -1,7 +1,7 @@
 #ifndef PAGED_CACHE_C_API_H
 #define PAGED_CACHE_C_API_H
 
-// single source of truth for the page size — shared by both the C (run.c)
+// single source of truth for the page size - shared by both the C (run.c)
 // and C++ (paged_cache.hpp/.cpp) sides, since a plain #define is valid in both
 #define PAGE_SIZE 16
 

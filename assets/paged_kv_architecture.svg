@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="940" height="600" viewBox="0 0 940 600" font-family="Segoe UI, Helvetica, Arial, sans-serif">
   <rect x="0" y="0" width="940" height="600" fill="#0d1117"/>
-  <text x="470" y="36" fill="#e6edf3" font-size="22" font-weight="700" text-anchor="middle">Paged KV-Cache — logical positions map to a shared pool of physical pages</text>
+  <text x="470" y="36" fill="#e6edf3" font-size="22" font-weight="700" text-anchor="middle">Paged KV-Cache - logical positions map to a shared pool of physical pages</text>
   <text x="470" y="60" fill="#8b949e" font-size="13" text-anchor="middle">PAGE_SIZE = 16 token positions per page · one page holds K (or V) for all layers</text>
 
   <!-- ===== LEFT: per-sequence page tables ===== -->

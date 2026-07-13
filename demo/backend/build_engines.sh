@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Builds both demo engines into demo/backend/bin/
-#   run_paged — this project's engine (paged KV-cache), from repo root sources
-#   run_naive — the original upstream flat-buffer engine (demo/engines/run_naive.c)
+#   run_paged - this project's engine (paged KV-cache), from repo root sources
+#   run_naive - the original upstream flat-buffer engine (demo/engines/run_naive.c)
 set -e
 cd "$(dirname "$0")"
 ROOT=../..

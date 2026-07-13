@@ -1,4 +1,4 @@
-# paged-kv-llama demo — single-container full-stack build.
+# paged-kv-llama demo - single-container full-stack build.
 # Build from the REPO ROOT (the engine sources live there):
 #   docker build -f demo/Dockerfile -t paged-kv-llama-demo .
 #   docker run -p 8000:8000 paged-kv-llama-demo
@@ -34,8 +34,8 @@ COPY tokenizer.bin README.md ./
 COPY assets ./assets
 COPY demo/backend/main.py .
 COPY --from=frontend /fe/dist ./static
-# demo models: 42M (default — better memory-ratio story) and 15M (fallback for
-# weak-CPU hosts — set MODEL_PATH=/app/stories15M.bin, no rebuild needed)
+# demo models: 42M (default - better memory-ratio story) and 15M (fallback for
+# weak-CPU hosts - set MODEL_PATH=/app/stories15M.bin, no rebuild needed)
 RUN wget -q https://huggingface.co/karpathy/tinyllamas/resolve/main/stories42M.bin \
  && wget -q https://huggingface.co/karpathy/tinyllamas/resolve/main/stories15M.bin
 ENV MODEL_PATH=/app/stories42M.bin \

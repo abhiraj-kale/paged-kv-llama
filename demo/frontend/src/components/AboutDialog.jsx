@@ -50,7 +50,7 @@ export default function AboutDialog({ open, onClose, repoUrl }) {
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth scroll="paper"
       PaperProps={{ sx: { backgroundImage: 'none', border: '1px solid', borderColor: 'divider', height: '88vh' } }}>
       <DialogTitle sx={{ display: 'flex', alignItems: 'center', borderBottom: '1px solid', borderColor: 'divider' }}>
-        <Typography component="span" variant="h6">About — README.md</Typography>
+        <Typography component="span" variant="h6">About - README.md</Typography>
         <Box sx={{ flex: 1 }} />
         <IconButton onClick={onClose} aria-label="close"><CloseIcon /></IconButton>
       </DialogTitle>
