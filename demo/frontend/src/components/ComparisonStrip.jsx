@@ -12,7 +12,7 @@ export default function ComparisonStrip({ naive, paged, config }) {
   const ratio = paged.kvBytes > 0 ? config.naive_bytes_kv / paged.kvBytes : null
 
   return (
-    <Paper sx={{ mt: 2.5, p: 2.5, borderColor: identical ? 'success.main' : 'warning.main' }}>
+    <Paper sx={{ mt: 2, p: 1.75, borderColor: identical ? 'success.main' : 'warning.main' }}>
       <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} alignItems={{ md: 'center' }}>
         <Stack direction="row" spacing={1.5} alignItems="center" sx={{ flex: 1 }}>
           {identical
@@ -26,7 +26,7 @@ export default function ComparisonStrip({ naive, paged, config }) {
             </Typography>
             <Typography variant="caption" color="text.secondary">
               {identical
-                ? 'Same seed, same story, token for token. The paged engine changes memory layout, not results.'
+                ? 'Same seed, same story, token for token.'
                 : 'The two engines should always produce the same text for the same seed.'}
             </Typography>
           </Box>
@@ -42,8 +42,8 @@ export default function ComparisonStrip({ naive, paged, config }) {
                   sx={{ ml: 1, fontWeight: 700 }} />
               </Typography>
               <Typography variant="caption" color="text.secondary">
-                measured pages used ({paged.final?.peak_pages_measured ?? paged.kvPages}) vs worst-case
-                reservation ({config.naive_pages} pages). This is what lets many chats share one pool.
+                {paged.final?.peak_pages_measured ?? paged.kvPages} pages measured vs{' '}
+                {config.naive_pages} reserved: this is what lets many chats share one pool
               </Typography>
             </Box>
           </Stack>

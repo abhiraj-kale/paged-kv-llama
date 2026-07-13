@@ -82,7 +82,7 @@ export default function EnginePanel({ variant, state, config, steps }) {
   const ratio = variant === 'paged' && state.kvBytes > 0 ? maxBytes / state.kvBytes : null
 
   return (
-    <Paper sx={{ p: 2.5, borderTop: `3px solid ${v.accent}`, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+    <Paper sx={{ p: 2, borderTop: `3px solid ${v.accent}`, display: 'flex', flexDirection: 'column', gap: 1.25 }}>
       <Stack direction="row" spacing={1} alignItems="center">
         <Box sx={{ color: v.accent, display: 'flex' }}>{v.icon}</Box>
         <Box sx={{ flex: 1 }}>
@@ -108,8 +108,8 @@ export default function EnginePanel({ variant, state, config, steps }) {
 
       <Box sx={{ position: 'relative' }}>
         <Box sx={{
-          minHeight: 170, maxHeight: 240, overflowY: 'auto',
-          fontFamily: '"Lora", Georgia, serif', fontSize: '1.02rem', lineHeight: 1.75,
+          minHeight: 110, maxHeight: 170, overflowY: 'auto',
+          fontFamily: '"Lora", Georgia, serif', fontSize: '0.98rem', lineHeight: 1.6,
           color: 'text.primary', whiteSpace: 'pre-wrap', px: 0.5,
         }}>
           {state.status === 'idle' && (
@@ -146,7 +146,7 @@ export default function EnginePanel({ variant, state, config, steps }) {
       </Box>
 
       <Stack direction="row" divider={<Box sx={{ borderLeft: '1px solid', borderColor: 'divider' }} />}
-        sx={{ py: 1, borderTop: '1px solid', borderBottom: '1px solid', borderColor: 'divider' }}>
+        sx={{ py: 0.5, borderTop: '1px solid', borderBottom: '1px solid', borderColor: 'divider' }}>
         <Stat label="tokens" value={state.tokens || '-'} />
         <Stat label="time" value={fmtSeconds(state.ms)} />
         <Stat label="tok/s" value={state.tokPerS ? state.tokPerS.toFixed(1) : '-'} />
@@ -167,10 +167,10 @@ export default function EnginePanel({ variant, state, config, steps }) {
             )}
           </Typography>
         </Stack>
-        <Box sx={{ height: 18, borderRadius: 9, bgcolor: 'rgba(139,148,158,0.15)', overflow: 'hidden' }}>
+        <Box sx={{ height: 14, borderRadius: 7, bgcolor: 'rgba(139,148,158,0.15)', overflow: 'hidden' }}>
           <Box sx={{
             height: '100%', width: `${state.status === 'idle' ? 0 : memPct}%`,
-            bgcolor: v.accent, borderRadius: 9,
+            bgcolor: v.accent, borderRadius: 7,
             transition: 'width 300ms ease',
             boxShadow: state.status !== 'idle' ? `0 0 12px ${v.accent}88` : 'none',
           }} />
@@ -178,8 +178,8 @@ export default function EnginePanel({ variant, state, config, steps }) {
         <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mt: 0.5 }}>
           <Typography variant="caption" color="text.secondary">
             {variant === 'naive'
-              ? `full bar = ${fmtBytes(maxBytes)} reserved no matter how short the story`
-              : 'same scale as the left panel: only what the story actually needs'}
+              ? `full bar = ${fmtBytes(maxBytes)} reserved up front`
+              : 'same scale; grows only as the story needs'}
           </Typography>
           {ratio && ratio > 1.05 && (
             <Tooltip title="How many times smaller this sequence's measured KV-cache is than the naive worst-case reservation. A shared pool turns this directly into how many more conversations fit in the same memory.">

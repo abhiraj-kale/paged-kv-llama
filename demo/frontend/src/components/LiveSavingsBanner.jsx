@@ -14,29 +14,29 @@ export default function LiveSavingsBanner({ naive, paged, config }) {
 
   return (
     <Paper sx={{
-      mt: 2.5, px: 3, py: 2.5, textAlign: 'center',
+      mt: 2, px: 2.5, py: 1.25, textAlign: 'center',
       border: '1px solid', borderColor: 'rgba(63,185,80,0.45)',
       background: 'linear-gradient(180deg, rgba(63,185,80,0.10), rgba(63,185,80,0.02))',
     }}>
-      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={{ xs: 1, sm: 3 }}
+      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={{ xs: 0.5, sm: 2.5 }}
         alignItems="center" justifyContent="center">
-        <Stack direction="row" spacing={1.5} alignItems="center">
-          <MemoryIcon sx={{ fontSize: 42, color: 'success.main' }} />
+        <Stack direction="row" spacing={1.25} alignItems="center">
+          <MemoryIcon sx={{ fontSize: 32, color: 'success.main' }} />
           <Typography key={ratioText} sx={{
             fontFamily: '"JetBrains Mono", monospace', fontWeight: 800,
-            fontSize: { xs: '2.6rem', sm: '3.4rem' }, lineHeight: 1,
+            fontSize: { xs: '2.1rem', sm: '2.6rem' }, lineHeight: 1,
             color: 'success.main', animation: 'popIn 0.35s ease-out',
           }}>
             {ratioText}
           </Typography>
         </Stack>
         <Box sx={{ textAlign: { xs: 'center', sm: 'left' } }}>
-          <Typography variant="h6" sx={{ lineHeight: 1.25 }}>
+          <Typography variant="subtitle1" sx={{ lineHeight: 1.2, fontWeight: 700 }}>
             less memory used by the paged engine, live
           </Typography>
-          <Typography variant="body2" color="text.secondary">
+          <Typography variant="caption" color="text.secondary">
             {haveNumber
-              ? `${fmtBytes(paged.kvBytes)} in pages vs ${fmtBytes(config.naive_bytes_kv)} the original reserved up front`
+              ? `${fmtBytes(paged.kvBytes)} in pages vs ${fmtBytes(config.naive_bytes_kv)} reserved up front`
               : 'measuring as the first tokens stream in...'}
           </Typography>
         </Box>

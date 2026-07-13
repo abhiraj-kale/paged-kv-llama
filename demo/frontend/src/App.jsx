@@ -98,7 +98,7 @@ export default function App() {
         </Toolbar>
       </AppBar>
 
-      <Container maxWidth="lg" sx={{ pt: { xs: 3, md: 5 } }}>
+      <Container maxWidth="lg" sx={{ pt: { xs: 2, md: 3 } }}>
         {configError && (
           <Alert severity="error" sx={{ mb: 3 }}>
             Backend unreachable ({configError}). Start it with{' '}
@@ -106,22 +106,16 @@ export default function App() {
           </Alert>
         )}
 
-        <Box sx={{ textAlign: 'center', mb: 4 }}>
-          <Typography variant="h4" sx={{ mb: 1 }}>
+        <Box sx={{ textAlign: 'center', mb: 2.5 }}>
+          <Typography variant="h4" sx={{ mb: 0.75 }}>
             One story. Two engines.{' '}
             <Box component="span" sx={{ color: 'success.main' }}>A fraction of the memory.</Box>
           </Typography>
-          <Typography color="text.secondary" sx={{ maxWidth: 720, mx: 'auto' }}>
-            Both panels run a real C inference engine on the same prompt with the same random seed,
-            so they produce the <em>identical</em> story. The difference is how they manage the KV-cache:
-            one reserves worst-case memory up front, the other pages it in on demand.
-          </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 1.5 }}>
-            A from-scratch systems project by{' '}
-            <Link href={PROFILE_URL} target="_blank" rel="noreferrer">Abhiraj Kale</Link>.
-            The paging design comes from{' '}
-            <Link href={PETERDB_URL} target="_blank" rel="noreferrer">PeterDB</Link>,
-            the C++ database storage engine I built before this.
+          <Typography variant="body2" color="text.secondary" sx={{ maxWidth: 640, mx: 'auto' }}>
+            Same prompt, same seed, identical story from two real C engines. Only the KV-cache
+            differs: reserved worst-case up front vs paged in on demand. A from-scratch project by{' '}
+            <Link href={PROFILE_URL} target="_blank" rel="noreferrer">Abhiraj Kale</Link>, design from{' '}
+            <Link href={PETERDB_URL} target="_blank" rel="noreferrer">PeterDB</Link>, my database engine.
           </Typography>
         </Box>
 
